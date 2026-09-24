@@ -1,7 +1,7 @@
 import streamlit as st
 
 USERS = {
-    "gutejenet1@gmail.com":      {"password": "1234", "name": "Gguta",    "role": "Requester"},
+    "gutetajenet1@gmail.com":      {"password": "1234", "name": "Gguta",    "role": "Requester"},
     "demekekerebih27@gmail.com": {"password": "1234", "name": "Dkerebih", "role": "Requester"},
     "mergishoh@gmail.com":       {"password": "1234", "name": "Mhabtamu", "role": "Approver"},
     "girmaabdeta@gmail.com":     {"password": "1234", "name": "Gabdeta",  "role": "Assigner"},
