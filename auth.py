@@ -15,15 +15,22 @@ def init_session():
         st.session_state.user_role = None
 
 def login(email, password):
-    email = email.strip().lower()
-    for stored_email, data in USERS.items():
-        if stored_email.strip().lower() == email:
-            if data["password"] == password:
-                st.session_state.logged_in = True
-                st.session_state.user_email = stored_email
-                st.session_state.user_name = data["name"]
-                st.session_state.user_role = data["role"]
-                return True
+    email_clean = email.strip().lower()
+    st.write("🔎 DEBUG - Looking for:", repr(email_clean))
+    st.write("🔎 DEBUG - Stored emails:", [repr(k) for k in USERS.keys()])
+    st.write("🔎 DEBUG - Match found?", email_clean in USERS)
+    
+    if email_clean in USERS:
+        stored = USERS[email_clean]["password"]
+        st.write("🔎 DEBUG - Stored password:", repr(stored))
+        st.write("🔎 DEBUG - Entered password:", repr(password))
+        st.write("🔎 DEBUG - Passwords equal?", stored == password)
+        if stored == password:
+            st.session_state.logged_in = True
+            st.session_state.user_email = email_clean
+            st.session_state.user_name = USERS[email_clean]["name"]
+            st.session_state.user_role = USERS[email_clean]["role"]
+            return True
     return False
 
 def logout():
