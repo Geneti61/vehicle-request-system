@@ -1,8 +1,11 @@
 import streamlit as st
 
-st.write("DEBUG: auth.py loaded")
-from config import USERS
-st.write("DEBUG: USERS found:", list(USERS.keys()))
+USERS = {
+    "gutejenet1@gmail.com":      {"password": "1234", "name": "Gguta",    "role": "Requester"},
+    "demekekerebih27@gmail.com": {"password": "1234", "name": "Dkerebih", "role": "Requester"},
+    "mergishoh@gmail.com":       {"password": "1234", "name": "Mhabtamu", "role": "Approver"},
+    "girmaabdeta@gmail.com":     {"password": "1234", "name": "Gabdeta",  "role": "Assigner"},
+}
 
 def init_session():
     if "logged_in" not in st.session_state:
@@ -12,17 +15,14 @@ def init_session():
         st.session_state.user_role = None
 
 def login(email, password):
-    email_clean = email.strip().lower()
-    st.write("DEBUG: looking for:", email_clean)
-    for stored_email, user_data in USERS.items():
-        st.write("DEBUG: comparing to:", stored_email.strip().lower())
-        if stored_email.strip().lower() == email_clean:
-            st.write("DEBUG: email match! password in file:", user_data["password"], "| password entered:", password)
-            if user_data["password"] == password:
+    email = email.strip().lower()
+    for stored_email, data in USERS.items():
+        if stored_email.strip().lower() == email:
+            if data["password"] == password:
                 st.session_state.logged_in = True
                 st.session_state.user_email = stored_email
-                st.session_state.user_name = user_data["name"]
-                st.session_state.user_role = user_data["role"]
+                st.session_state.user_name = data["name"]
+                st.session_state.user_role = data["role"]
                 return True
     return False
 
