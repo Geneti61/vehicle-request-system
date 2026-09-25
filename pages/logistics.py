@@ -80,16 +80,12 @@ with tab1:
 
                 available_drivers = [d for d in DRIVERS if d not in on_duty]
 
-                # Build lookup dictionaries
+                # Build name -> plate mapping
                 name_to_plate = {}
-                plate_to_name = {}
                 for d in available_drivers:
                     parts = d.split(" - ")
                     if len(parts) >= 2:
-                        name = parts[0].strip()
-                        plate = parts[-1].strip()
-                        name_to_plate[name] = plate
-                        plate_to_name[plate] = name
+                        name_to_plate[parts[0].strip()] = parts[-1].strip()
 
                 for slot in vehicle_slots:
                     label = slot["label"]
@@ -107,42 +103,29 @@ with tab1:
                         st.warning("No drivers available right now. Leave this vehicle pending.")
                         continue
 
-                    # Session keys
-                    name_key = f"name_{r['request_id']}_{idx}"
-                    plate_key = f"plate_{r['request_id']}_{idx}"
-
-                    # Initialize from session state
-                    if name_key not in st.session_state:
-                        st.session_state[name_key] = ""
-                    if plate_key not in st.session_state:
-                        st.session_state[plate_key] = ""
-
-                    # --- Callbacks to sync both ways ---
-                    def sync_name_to_plate(nk=name_key, pk=plate_key):
-                        typed_name = st.session_state[nk].strip()
-                        if typed_name in name_to_plate:
-                            st.session_state[pk] = name_to_plate[typed_name]
-
-                    def sync_plate_to_name(nk=name_key, pk=plate_key):
-                        typed_plate = st.session_state[pk].strip()
-                        if typed_plate in plate_to_name:
-                            st.session_state[nk] = plate_to_name[typed_plate]
-
+                    # Two drop-downs
                     col1, col2, col3 = st.columns([3, 3, 1])
                     with col1:
-                        st.text_input(
-                            "Driver Name (type and select)",
-                            key=name_key,
-                            on_change=sync_name_to_plate,
-                            placeholder="e.g. Adisu Negash",
+                        chosen_name = st.selectbox(
+                            "Driver Name",
+                            options=["-- Select Driver --"] + list(name_to_plate.keys()),
+                            key=f"name_{r['request_id']}_{idx}",
                         )
+
                     with col2:
-                        st.text_input(
+                        # Show only the plate for the selected driver
+                        if chosen_name != "-- Select Driver --":
+                            plate_options = [name_to_plate[chosen_name]]
+                        else:
+                            plate_options = ["-- Plate auto-fills --"]
+
+                        chosen_plate = st.selectbox(
                             "Plate Number",
-                            key=plate_key,
-                            on_change=sync_plate_to_name,
-                            placeholder="e.g. 4-35384",
+                            options=plate_options,
+                            key=f"plate_{r['request_id']}_{idx}",
+                            disabled=(chosen_name == "-- Select Driver --"),
                         )
+
                     with col3:
                         st.write("")
                         st.write("")
@@ -152,19 +135,14 @@ with tab1:
                             use_container_width=True,
                         )
 
-                    # Show helper dropdown for available names
-                    st.caption(f"Available: {', '.join(list(name_to_plate.keys())[:5])}...")
-
                     if assign_clicked:
-                        final_name = st.session_state[name_key].strip()
-                        final_plate = st.session_state[plate_key].strip()
-
-                        if not final_name or not final_plate:
-                            st.error("Please provide both Driver Name and Plate Number.")
+                        if chosen_name == "-- Select Driver --":
+                            st.error("Please select a driver first.")
                         else:
+                            final_plate = name_to_plate[chosen_name]
                             r.setdefault("assignments", []).append({
                                 "vehicle": slot["label"],
-                                "driver": final_name,
+                                "driver": chosen_name,
                                 "plate": final_plate,
                                 "hub": r["hub"],
                                 "assigned_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -179,7 +157,7 @@ with tab1:
                             else:
                                 r["status"] = "Partially Assigned"
 
-                            st.success(f"{slot['label']} assigned to {final_name} (Plate: {final_plate}).")
+                            st.success(f"{slot['label']} assigned to {chosen_name} (Plate: {final_plate}).")
                             st.rerun()
 
 # ============================================================
