@@ -5,8 +5,8 @@ USERS = {
     "demekekerebih27@gmail.com": {"password": "1234", "name": "Dkerebih", "role": "Requester"},
     "mergishoh@gmail.com":       {"password": "1234", "name": "Mhabtamu", "role": "Approver"},
     "girmaabdeta@gmail.com":     {"password": "1234", "name": "Gabdeta",  "role": "Assigner"},
+    "nahomgem.ethio@gmail.com":  {"password": "1234", "name": "Nahom",    "role": "Director"},
 }
-
 def init_session():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
