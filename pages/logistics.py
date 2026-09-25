@@ -65,7 +65,6 @@ tab1, tab2, tab3 = st.tabs(["📋 Assign Drivers", "✅ Mark Returned", "🚚 On
 with tab1:
     st.subheader("📋 Assign Drivers to Approved Requests")
 
-    # Show requests that are Approved OR Partially Assigned
     active = [r for r in st.session_state.requests if r["status"] in ["Approved", "Partially Assigned"]]
 
     if not active:
@@ -78,17 +77,13 @@ with tab1:
                 st.write(f"**Status:** {r['status']}")
                 st.divider()
 
-                # Build a flat list of vehicles with a unique index
-                # Each vehicle has: type, index, assigned or not
                 existing_assignments = r.get("assignments", [])
-                assigned_count = len([a for a in existing_assignments if a.get("status") in ["On Duty", "Returned"]])
 
-                # Build list of vehicle slots
+                # Build vehicle slots
                 vehicle_slots = []
                 slot_index = 0
                 for v in r["vehicles"]:
                     for j in range(v["qty"]):
-                        # Check if this slot already has an assignment
                         assigned = None
                         if slot_index < len(existing_assignments):
                             assigned = existing_assignments[slot_index]
@@ -99,13 +94,9 @@ with tab1:
                         })
                         slot_index += 1
 
-                # Track drivers chosen during THIS session (for unassigned vehicles)
                 drivers_picked_this_session = []
-
-                # Available drivers = those not currently On Duty
                 available_drivers = [d for d in DRIVERS if d not in on_duty]
 
-                # Render each vehicle independently
                 for slot in vehicle_slots:
                     label = slot["label"]
                     idx = slot["index"]
@@ -113,36 +104,40 @@ with tab1:
 
                     st.markdown(f"**{label}**")
 
-                    # If already assigned → show as read-only
                     if existing and existing.get("status") in ["On Duty", "Returned"]:
                         status_icon = "🚚 On Duty" if existing["status"] == "On Duty" else "✅ Returned"
                         st.success(f"✔️ Assigned: **{existing['driver']}** — Plate: **{existing.get('plate','')}** ({status_icon})")
                         continue
 
-                    # If not assigned → show driver picker
-                    # Remove drivers already picked in this session
                     selectable = [d for d in available_drivers if d not in drivers_picked_this_session]
 
                     if not selectable:
                         st.warning("⚠️ No drivers available right now. Leave this vehicle pending.")
                         continue
 
-                    col1, col2, col3 = st.columns([3, 2, 1])
+                    # Build driver-name and plate lists
+                    driver_names = ["— Select Driver —"] + [d.split(" - ")[0] for d in selectable]
+                    plate_numbers = ["— Select Plate —"] + [d.split(" - ")[-1] for d in selectable]
+                    name_to_plate = {d.split(" - ")[0]: d.split(" - ")[-1] for d in selectable}
+                    plate_to_name = {d.split(" - ")[-1]: d.split(" - ")[0] for d in selectable}
+
+                    col1, col2, col3 = st.columns([3, 3, 1])
                     with col1:
-                        chosen = st.selectbox(
-                            "Driver",
-                            options=["— Select driver —"] + selectable,
-                            key=f"drv_{r['request_id']}_{idx}",
+                        chosen_name = st.selectbox(
+                            "Driver Name",
+                            options=driver_names,
+                            key=f"drvname_{r['request_id']}_{idx}",
                         )
                     with col2:
-                        plate_val = ""
-                        if chosen != "— Select driver —" and " - " in chosen:
-                            plate_val = chosen.split(" - ")[-1]
-                        st.text_input(
-                            "Plate",
-                            value=plate_val,
+                        default_plate = "— Select Plate —"
+                        if chosen_name != "— Select Driver —":
+                            default_plate = name_to_plate.get(chosen_name, "— Select Plate —")
+                        plate_index = plate_numbers.index(default_plate) if default_plate in plate_numbers else 0
+                        chosen_plate = st.selectbox(
+                            "Plate Number",
+                            options=plate_numbers,
+                            index=plate_index,
                             key=f"plate_{r['request_id']}_{idx}",
-                            disabled=True,
                         )
                     with col3:
                         st.write("")
@@ -153,22 +148,30 @@ with tab1:
                             use_container_width=True,
                         )
 
+                    # Resolve final driver + plate
+                    final_driver = ""
+                    final_plate = ""
+                    if chosen_name != "— Select Driver —":
+                        final_driver = chosen_name
+                        final_plate = name_to_plate.get(chosen_name, "")
+                    elif chosen_plate != "— Select Plate —":
+                        final_plate = chosen_plate
+                        final_driver = plate_to_name.get(chosen_plate, "")
+
                     if assign_clicked:
-                        if chosen == "— Select driver —":
-                            st.error("Please select a driver first.")
+                        if not final_driver or not final_plate:
+                            st.error("Please select a driver or plate number first.")
                         else:
-                            # Add the assignment
                             r.setdefault("assignments", []).append({
                                 "vehicle": slot["label"],
-                                "driver": chosen,
-                                "plate": plate_val,
+                                "driver": final_driver,
+                                "plate": final_plate,
                                 "hub": r["hub"],
                                 "assigned_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                                 "returned_at": None,
                                 "status": "On Duty",
                             })
 
-                            # Update request status
                             total_slots = sum(v["qty"] for v in r["vehicles"])
                             assigned_now = len([a for a in r["assignments"] if a.get("status") in ["On Duty", "Returned"]])
                             if assigned_now >= total_slots:
@@ -176,10 +179,8 @@ with tab1:
                             else:
                                 r["status"] = "Partially Assigned"
 
-                            st.success(f"✅ {slot['label']} assigned to {chosen}.")
+                            st.success(f"✅ {slot['label']} assigned to {final_driver} (Plate: {final_plate}).")
                             st.rerun()
-
-                    drivers_picked_this_session.append(chosen) if chosen != "— Select driver —" else None
 
 # ============================================================
 # TAB 2 — Mark Returned
@@ -214,7 +215,6 @@ with tab2:
                             a["returned_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
                             a["status"] = "Returned"
 
-                            # If all assignments are returned → Completed
                             if all(x.get("status") == "Returned" for x in r["assignments"]):
                                 r["status"] = "Completed"
 
