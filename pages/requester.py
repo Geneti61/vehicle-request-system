@@ -24,19 +24,23 @@ st.divider()
 if "requests" not in st.session_state:
     st.session_state.requests = []
 
+# ============================================================
+# HUB SELECTION — Outside form so "Other..." works dynamically
+# ============================================================
+st.subheader("Request Details")
+requester_name = st.text_input("Requester Name", value=user["name"], disabled=True)
+warehouse = st.selectbox("Warehouse Requested For", WAREHOUSES)
+
+hub_choice = st.selectbox("Hub Requested For", HUBS + ["Other..."])
+if hub_choice == "Other...":
+    hub = st.text_input("Please specify the Hub", placeholder="e.g. Arbaminch Special Zone")
+else:
+    hub = hub_choice
+
+# ============================================================
+# REST OF THE FORM
+# ============================================================
 with st.form("request_form"):
-    st.subheader("Request Details")
-
-    requester_name = st.text_input("Requester Name", value=user["name"], disabled=True)
-    warehouse = st.selectbox("Warehouse Requested For", WAREHOUSES)
-
-    # --- HUB with "Other..." option ---
-    hub_choice = st.selectbox("Hub Requested For", HUBS + ["Other..."])
-    if hub_choice == "Other...":
-        hub = st.text_input("Please specify the Hub", placeholder="e.g. Arbaminch Special Zone")
-    else:
-        hub = hub_choice
-
     purpose = st.text_area("Purpose / Reason", placeholder="e.g., Distribution to Adama Hub")
     required_date = st.date_input("Required Date", value=date.today())
 
