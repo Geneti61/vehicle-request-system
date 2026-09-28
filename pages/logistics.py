@@ -8,6 +8,7 @@ import io
 from datetime import datetime
 from config import DRIVERS, DRIVER_VEHICLE_TYPE
 from auth import current_user, is_logged_in
+from persistence import save_requests, append_audit
 
 if not is_logged_in():
     st.warning("Please log in first.")
@@ -82,7 +83,6 @@ with tab1:
 
                 available_drivers = [d for d in DRIVERS if d not in on_duty]
 
-                # Build name -> plate mapping
                 name_to_plate = {}
                 for d in available_drivers:
                     parts = d.split(" - ")
@@ -152,6 +152,8 @@ with tab1:
                                 r["status"] = "On Duty"
                             else:
                                 r["status"] = "Partially Assigned"
+                            save_requests(st.session_state.requests)
+                            append_audit("Driver Assigned", user["email"], r["request_id"])
                             st.success(f"{slot['label']} assigned to {chosen_name} (Plate: {final_plate}).")
                             st.rerun()
 
@@ -185,6 +187,8 @@ with tab2:
                             a["status"] = "Returned"
                             if all(x.get("status") == "Returned" for x in r["assignments"]):
                                 r["status"] = "Completed"
+                            save_requests(st.session_state.requests)
+                            append_audit("Vehicle Returned", user["email"], r["request_id"])
                             st.success(f"{a['driver']} marked as Returned.")
                             st.rerun()
 
