@@ -6,6 +6,7 @@ import streamlit as st
 from datetime import datetime, date
 from config import VEHICLES, WAREHOUSES, HUBS
 from auth import current_user, is_logged_in
+from persistence import save_requests, append_audit
 
 if not is_logged_in():
     st.warning("Please log in first.")
@@ -58,11 +59,15 @@ with tab1:
                         r["status"] = "Approved"
                         r["approved_by"] = user["name"]
                         r["approved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        save_requests(st.session_state.requests)
+                        append_audit("Request Approved", user["email"], r["request_id"])
                         st.rerun()
                 with col2:
                     if st.button(f"Reject {r['request_id']}", key=f"rj_{r['request_id']}", use_container_width=True):
                         r["status"] = "Rejected"
                         r["rejection_reason"] = "Rejected by approver"
+                        save_requests(st.session_state.requests)
+                        append_audit("Request Rejected", user["email"], r["request_id"])
                         st.rerun()
 
 # ============================================================
@@ -125,5 +130,7 @@ with tab2:
                     "source": "Approver-Direct",
                 }
                 st.session_state.requests.append(new_request)
+                save_requests(st.session_state.requests)
+                append_audit("Direct Request", user["email"], req_id)
                 st.success(f"Direct Request {req_id} submitted and auto-approved!")
                 st.balloons()
