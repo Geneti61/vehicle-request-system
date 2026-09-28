@@ -6,6 +6,7 @@ import streamlit as st
 from datetime import datetime, date
 from config import VEHICLES, WAREHOUSES, HUBS
 from auth import current_user, is_logged_in
+from persistence import save_requests, append_audit
 
 if not is_logged_in():
     st.warning("Please log in first.")
@@ -82,6 +83,8 @@ with st.form("request_form"):
                 "assignments": [],
             }
             st.session_state.requests.append(new_request)
+            save_requests(st.session_state.requests)
+            append_audit("Request Submitted", user["email"], req_id)
             st.success(f"Request {req_id} submitted successfully!")
             st.balloons()
 
