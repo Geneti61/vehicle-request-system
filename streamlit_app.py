@@ -17,18 +17,30 @@ user = current_user()
 role = user["role"]
 
 # ============================================================
-# ROLE → ALLOWED PAGES
+# HIDE UNWANTED PAGES VIA CSS
 # ============================================================
-PAGES_BY_ROLE = {
-    "Requester": ["requester", "assigned", "reports"],
-    "Approver":  ["approver", "assigned", "reports"],
-    "Assigner":  ["logistics", "assigned", "reports"],
-    "Director":  ["director", "assigned", "reports"],
+# Map role → pages to HIDE
+HIDE_BY_ROLE = {
+    "Requester": ["approver", "logistics", "director"],
+    "Approver":  ["requester", "logistics", "director"],
+    "Assigner":  ["requester", "approver", "director"],
+    "Director":  ["requester", "approver", "logistics"],
 }
-allowed = PAGES_BY_ROLE.get(role, ["reports"])
+
+to_hide = HIDE_BY_ROLE.get(role, [])
+
+# Build CSS to hide those specific sidebar links
+if to_hide:
+    css_rules = ""
+    for page in to_hide:
+        # Hide nav link by href pattern
+        css_rules += f"""
+        [data-testid="stSidebarNav"] a[href*="{page}"] {{ display: none !important; }}
+        """
+    st.markdown(f"<style>{css_rules}</style>", unsafe_allow_html=True)
 
 # ============================================================
-# SIDEBAR
+# SIDEBAR (custom info)
 # ============================================================
 with st.sidebar:
     st.title("🚚 EPSS System")
