@@ -1,12 +1,12 @@
-import streamlit as st
+# ============================================================
+# EPSS Vehicle System - Authentication
+# Reads USERS from config.py (which reads from Excel)
+# ============================================================
 
-USERS = {
-    "gutetajenet1@gmail.com":      {"password": "1234", "name": "Gguta",    "role": "Requester"},
-    "demekekerebih27@gmail.com": {"password": "1234", "name": "Dkerebih", "role": "Requester"},
-    "mergishoh@gmail.com":       {"password": "1234", "name": "Mhabtamu", "role": "Approver"},
-    "girmaabdeta@gmail.com":     {"password": "1234", "name": "Gabdeta",  "role": "Assigner"},
-    "nahomgem.ethio@gmail.com":  {"password": "1234", "name": "Nahom",    "role": "Director"},
-}
+import streamlit as st
+from config import USERS
+
+
 def init_session():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
@@ -14,24 +14,19 @@ def init_session():
         st.session_state.user_name = None
         st.session_state.user_role = None
 
+
 def login(email, password):
     email_clean = email.strip().lower()
-    st.write("🔎 DEBUG - Looking for:", repr(email_clean))
-    st.write("🔎 DEBUG - Stored emails:", [repr(k) for k in USERS.keys()])
-    st.write("🔎 DEBUG - Match found?", email_clean in USERS)
-    
-    if email_clean in USERS:
-        stored = USERS[email_clean]["password"]
-        st.write("🔎 DEBUG - Stored password:", repr(stored))
-        st.write("🔎 DEBUG - Entered password:", repr(password))
-        st.write("🔎 DEBUG - Passwords equal?", stored == password)
-        if stored == password:
-            st.session_state.logged_in = True
-            st.session_state.user_email = email_clean
-            st.session_state.user_name = USERS[email_clean]["name"]
-            st.session_state.user_role = USERS[email_clean]["role"]
-            return True
+    for stored_email, data in USERS.items():
+        if stored_email.strip().lower() == email_clean:
+            if data["password"] == password:
+                st.session_state.logged_in = True
+                st.session_state.user_email = stored_email
+                st.session_state.user_name = data["name"]
+                st.session_state.user_role = data["role"]
+                return True
     return False
+
 
 def logout():
     st.session_state.logged_in = False
@@ -39,8 +34,10 @@ def logout():
     st.session_state.user_name = None
     st.session_state.user_role = None
 
+
 def is_logged_in():
     return st.session_state.get("logged_in", False)
+
 
 def current_user():
     return {
@@ -49,25 +46,31 @@ def current_user():
         "role": st.session_state.get("user_role"),
     }
 
+
 def require_role(role):
     if not is_logged_in():
-        st.error("🔒 Please log in first.")
+        st.error("Please log in first.")
         st.stop()
     if st.session_state.user_role != role:
-        st.error(f"🚫 Access denied. This page is for **{role}** only.")
+        st.error(f"Access denied. This page is for {role} only.")
         st.stop()
 
+
 def show_login_page():
-    st.title("🚚 EPSS Fleet Management System")
+    st.title("EPSS Fleet Management System")
+    st.caption("Ethiopian Pharmaceutical Supply Service — Vehicle Request & Approval")
     st.divider()
+
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.subheader("🔐 Login")
+        st.subheader("Login")
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
+
         if st.button("Login", use_container_width=True, type="primary"):
             if login(email, password):
                 st.rerun()
             else:
-                st.error("❌ Invalid email or password.")
+                st.error("Invalid email or password.")
+
         st.caption("Demo password: **1234**")
