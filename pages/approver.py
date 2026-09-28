@@ -77,17 +77,22 @@ with tab2:
     st.subheader("New Direct Request")
     st.caption("Create a request directly. It will be auto-approved and sent to the Assigner.")
 
+    # ============================================================
+    # Hub selection OUTSIDE the form so "Other..." works dynamically
+    # ============================================================
+    st.write("**Request Details**")
+    warehouse = st.selectbox("Warehouse Requested For", WAREHOUSES, key="dir_wh")
+
+    hub_choice = st.selectbox("Hub Requested For", HUBS + ["Other..."], key="dir_hub")
+    if hub_choice == "Other...":
+        hub = st.text_input("Please specify the Hub", placeholder="e.g. Arbaminch Special Zone", key="dir_hub_other")
+    else:
+        hub = hub_choice
+
+    # ============================================================
+    # Rest of the form
+    # ============================================================
     with st.form("direct_request_form"):
-        st.write("**Request Details**")
-        warehouse = st.selectbox("Warehouse Requested For", WAREHOUSES, key="dir_wh")
-
-        # --- HUB with "Other..." option ---
-        hub_choice = st.selectbox("Hub Requested For", HUBS + ["Other..."], key="dir_hub")
-        if hub_choice == "Other...":
-            hub = st.text_input("Please specify the Hub", placeholder="e.g. Arbaminch Special Zone", key="dir_hub_other")
-        else:
-            hub = hub_choice
-
         purpose = st.text_area("Purpose / Reason", placeholder="e.g., Urgent distribution to Adama Hub", key="dir_purpose")
         required_date = st.date_input("Required Date", value=date.today(), key="dir_reqdate")
 
