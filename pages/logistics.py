@@ -33,9 +33,16 @@ def get_on_duty_drivers():
     for r in st.session_state.requests:
         for a in r.get("assignments", []):
             if a.get("status") == "On Duty":
+                days_out = 0
+                if a.get("assigned_at"):
+                    try:
+                        d = datetime.strptime(a["assigned_at"], "%Y-%m-%d %H:%M")
+                        days_out = (datetime.now() - d).days
+                    except Exception:
+                        days_out = 0
                 on_duty[a["driver"]] = {
                     "hub": a.get("hub", r.get("hub", "?")),
-                    "days_out": 0,
+                    "days_out": days_out,
                     "plate": a.get("plate", ""),
                     "request_id": r["request_id"],
                     "assigned_at": a.get("assigned_at", ""),
