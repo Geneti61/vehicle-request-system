@@ -1,4 +1,3 @@
-
 import streamlit as st
 from auth import init_session, is_logged_in, show_login_page, current_user, logout
 from persistence import load_requests, save_requests
@@ -29,10 +28,11 @@ role = user["role"]
 # HIDE UNWANTED PAGES BY ROLE
 # ============================================================
 HIDE_BY_ROLE = {
-    "Requester": ["approver", "logistics", "director"],
-    "Approver":  ["requester", "logistics", "director"],
-    "Assigner":  ["requester", "approver", "director"],
-    "Director":  ["requester", "approver", "logistics"],
+    "Requester":           ["approver", "logistics", "director", "assignment_approval"],
+    "Approver":            ["requester", "logistics", "director", "assignment_approval"],
+    "Assigner":            ["requester", "approver", "director", "assignment_approval"],
+    "Assignment Approver": ["requester", "approver", "logistics", "director"],
+    "Director":            ["requester", "approver", "logistics", "assignment_approval"],
 }
 
 to_hide = HIDE_BY_ROLE.get(role, [])
