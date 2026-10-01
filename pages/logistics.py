@@ -50,6 +50,16 @@ def get_on_duty_drivers():
     return on_duty
 
 
+def get_assigned_drivers():
+    """Drivers currently assigned but NOT yet approved (waiting for Approver)."""
+    assigned = set()
+    for r in st.session_state.requests:
+        for a in r.get("assignments", []):
+            if a.get("status") == "Assigned":
+                assigned.add(a["driver"])
+    return assigned
+
+
 tab1, tab2, tab3, tab4 = st.tabs(["Assign Drivers", "Mark Returned", "On Duty Overview", "Returned History"])
 
 # ============================================================
@@ -59,6 +69,8 @@ with tab1:
     st.subheader("Assign Drivers to Approved Requests")
 
     on_duty = get_on_duty_drivers()
+    assigned_pending = get_assigned_drivers()
+
     active = [r for r in st.session_state.requests if r["status"] in ["Approved", "Partially Assigned"]]
 
     if not active:
@@ -87,7 +99,9 @@ with tab1:
                         })
                         slot_index += 1
 
-                available_drivers = [d for d in DRIVERS if d not in on_duty]
+                # Exclude drivers already On Duty OR waiting assignment approval
+                unavailable = set(on_duty.keys()) | assigned_pending
+                available_drivers = [d for d in DRIVERS if d not in unavailable]
 
                 name_to_plate = {}
                 for d in available_drivers:
@@ -102,8 +116,8 @@ with tab1:
 
                     st.markdown(f"**{label}**")
 
-                    if existing and existing.get("status") in ["On Duty", "Returned"]:
-                        status_icon = "On Duty" if existing["status"] == "On Duty" else "Returned"
+                    if existing and existing.get("status") in ["Assigned", "On Duty", "Returned"]:
+                        status_icon = existing["status"]
                         st.success(f"Assigned: {existing['driver']} - Plate: {existing.get('plate','')} ({status_icon})")
                         continue
 
@@ -150,17 +164,17 @@ with tab1:
                                 "hub": r["hub"],
                                 "assigned_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                                 "returned_at": None,
-                                "status": "On Duty",
+                                "status": "Assigned",
                             })
                             total_slots = sum(v["qty"] for v in r["vehicles"])
-                            assigned_now = len([a for a in r["assignments"] if a.get("status") in ["On Duty", "Returned"]])
+                            assigned_now = len([a for a in r["assignments"] if a.get("status") in ["Assigned", "On Duty", "Returned"]])
                             if assigned_now >= total_slots:
-                                r["status"] = "On Duty"
+                                r["status"] = "Assigned"
                             else:
                                 r["status"] = "Partially Assigned"
                             save_requests(st.session_state.requests)
                             append_audit("Driver Assigned", user["email"], r["request_id"])
-                            st.success(f"{slot['label']} assigned to {chosen_name} (Plate: {final_plate}).")
+                            st.success(f"{slot['label']} assigned to {chosen_name} (Plate: {final_plate}). Waiting for Approver confirmation.")
                             st.rerun()
 
 # ============================================================
