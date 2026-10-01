@@ -50,8 +50,6 @@ def get_on_duty_drivers():
     return on_duty
 
 
-on_duty = get_on_duty_drivers()
-
 tab1, tab2, tab3, tab4 = st.tabs(["Assign Drivers", "Mark Returned", "On Duty Overview", "Returned History"])
 
 # ============================================================
@@ -60,6 +58,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["Assign Drivers", "Mark Returned", "On Duty Ov
 with tab1:
     st.subheader("Assign Drivers to Approved Requests")
 
+    on_duty = get_on_duty_drivers()
     active = [r for r in st.session_state.requests if r["status"] in ["Approved", "Partially Assigned"]]
 
     if not active:
@@ -169,6 +168,7 @@ with tab1:
 # ============================================================
 with tab2:
     st.subheader("Mark Returned")
+    on_duty = get_on_duty_drivers()
     if not on_duty:
         st.info("No vehicles currently On Duty.")
     else:
@@ -204,6 +204,7 @@ with tab2:
 # ============================================================
 with tab3:
     st.subheader("Vehicles Currently On Duty")
+    on_duty = get_on_duty_drivers()
     if not on_duty:
         st.info("No vehicles on duty right now.")
     else:
